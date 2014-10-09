@@ -14,19 +14,20 @@
 ;;
 
 .386p
-_TEXT   segment byte public use16 'CODE'
-        assume  cs:_TEXT
+TEXT    segment byte public use16 'CODE'
+        assume  cs:TEXT
+
 
 ;; void lgdt(DescTblPtr *gdtptr);
-public          _lgdt
-_lgdt           proc    near
-                push    bp
-                mov     bp,sp
-                mov     bx,[bp+4]
+public          lgdt_
+lgdt_           proc    near
+;               push    bp
+;               mov     bp,sp
+                mov     bx,ax
                 lgdt    fword ptr [bx]
-                pop     bp
+;               pop     bp
                 ret
-_lgdt           endp
+lgdt_           endp
 
 ;;
 ;;    List 5-15  リアルモードからプロテクトモードに移行するRealToProto()関数
@@ -38,14 +39,14 @@ saveES  dw      ?
 saveSS  dw      ?
 
 ;; void RealToProto(void);
-public          _RealToProto
-_RealToProto    proc    near
+public          RealToProto_
+RealToProto_    proc    near
                 push    bp
                 mov     bp,sp
                 ;
-                mov     saveDS, ds
-                mov     saveES, es
-                mov     saveSS, ss
+                mov     cs:saveDS, ds
+                mov     cs:saveES, es
+                mov     cs:saveSS, ss
                 ;
                 cli
                 ;
@@ -53,9 +54,9 @@ _RealToProto    proc    near
                 or      eax,1
                 mov     cr0,eax
                 ;
-                jmp     flush_q1
+;               jmp     flush_q1
 flush_q1:
-                db      0eah
+                db      0eah            ; jmp far
                 dw      offset set_cs_desc1
                 dw      08h
 set_cs_desc1:
@@ -67,7 +68,7 @@ set_cs_desc1:
                 ;
                 pop     bp
                 ret
-_RealToProto    endp
+RealToProto_    endp
 
 ;;
 ;;    List 5-16  プロテクトモードからリアルモードに移行するProtoToReal()関数
@@ -75,8 +76,8 @@ _RealToProto    endp
 ;;
 
 ;; void ProtoToReal(void);
-public          _ProtoToReal
-_ProtoToReal    proc    near
+public          ProtoToReal_
+ProtoToReal_    proc    near
                 push    bp
                 mov     bp,sp
                 ;
@@ -85,7 +86,7 @@ _ProtoToReal    proc    near
                 mov     es,ax
                 mov     ss,ax
                 ;
-                db      0eah
+                db      0eah            ; jmp far
                 dw      offset set_cs_desc2
                 dw      20h
 set_cs_desc2:
@@ -93,9 +94,9 @@ set_cs_desc2:
                 and     eax,0fffffffeh
                 mov     cr0,eax
                 ;
-                jmp     flush_q2
+;               jmp     flush_q2
 flush_q2:
-                db      0eah
+                db      0eah            ; jmp far
                 dw      offset set_cs_desc3
                 dw      seg set_cs_desc3
 set_cs_desc3:
@@ -103,10 +104,11 @@ set_cs_desc3:
                 mov     es, cs:saveES
                 mov     ss, cs:saveSS
                 ;
+                sti
+                ;
                 pop     bp
                 ret
-_ProtoToReal    endp
+ProtoToReal_    endp
 
-_TEXT   ends
+TEXT    ends
         end
-
